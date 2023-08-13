@@ -1,6 +1,8 @@
 /// Factorizes a 10x10 matrix, given a column permutation
 /// vector, and solves for a single right-hand-side.
 fn main() {
+    env_logger::init();
+
     // A = [
     //   [2.10                               0.14 0.09     ]
     //   [     1.10           0.06                     0.03]

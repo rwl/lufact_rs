@@ -1,6 +1,8 @@
 use crate::lu::*;
 use crate::lufact::{lsolve, ltsolve, usolve, utsolve};
 
+/// Solve `Ax=b` for one or more right-hand-sides given the numeric
+/// factorization of A from [dgstrf()].
 pub fn dgstrs(
     _gp: &GP,
     trans: char,
@@ -122,7 +124,7 @@ pub fn dgstrs(
 
     // if (reporter_func)
     //   (*reporter_func)(reporter_ctxt,"FLOPS",&flops);
-    println!("FLOPS: {}", flops);
+    log::info!("flops: {}", flops);
 
     0
 }

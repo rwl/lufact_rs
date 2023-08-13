@@ -1,6 +1,14 @@
 use crate::lu::*;
 use crate::lufact::{lucomp, lucopy, ludfs, maxmatch};
 
+/// Performs sparse LU factorization with partial pivoting.
+///
+/// Given a matrix A in sparse format by columns, it performs an LU
+/// factorization, with partial or threshold pivoting, if desired.
+/// The factorization is `PA = LU`, where `L` and `U` are triangular.
+/// `P`, `L`, and `U` are returned.  This subroutine uses the
+/// Coleman-Gilbert-Peierls algorithm, in which total time is
+/// `O(nonzero multiplications)`.
 pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -> Result<LU, i32> {
     // let a_rowind: Vec<i32>;
     // let a_colptr: Vec<i32>;
@@ -101,10 +109,13 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
     // let user_col_perm_length: i32 = gp.;
     let user_col_perm_base: i32 = gp.col_perm_base;
 
-    // println!(
-    //     "piv pol={} piv_thr={} drop_thr={} col_fill_rt={}\n",
-    //     pivot_policy, pivot_threshold, drop_threshold, col_fill_ratio
-    // );
+    log::info!(
+        "piv_pol={} piv_thr={} drop_thr={} col_fill_rt={}",
+        pivot_policy,
+        pivot_threshold,
+        drop_threshold,
+        col_fill_ratio
+    );
 
     // pivot_threshold = 0.001;
     // if pivot_threshold == 0.0 {
@@ -189,7 +200,7 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
 
     for jcol in 0..ncol {
         if cmatch[jcol as usize] == 0 {
-            println!("Warning: Perfect matching not found");
+            log::warn!("perfect matching not found");
             break;
         }
     }
@@ -218,7 +229,7 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
     lu.row_perm.fill(0);
 
     if let Some(user_col_perm) = user_col_perm {
-        println!("user_col_perm_base = {}", user_col_perm_base);
+        log::info!("user_col_perm_base={}", user_col_perm_base);
         for jcol in 0..ncol {
             lu.col_perm[jcol as usize] = user_col_perm[jcol as usize] + (1 - user_col_perm_base);
         }
@@ -235,7 +246,7 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
         if lastlu + nrow >= lu.lu_size {
             let new_size: i32 = (lu.lu_size as f64 * expand_ratio) as i32;
 
-            // eprintln!("expanding to %d nonzeros...",new_size);
+            log::info!("expanding to {} nonzeros...", new_size);
 
             // if ((lu.lu_nz =
             //       (scalar_t*) realloc( lu.lu_nz,
@@ -274,7 +285,7 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
             pattern[(orig_row - 1) as usize] = 2;
 
             if lu.row_perm[(orig_row - 1) as usize] != 0 {
-                println!("ERROR: PIVOT ROW FROM MAX-MATCHING ALREADY USED.");
+                log::error!("pivot row from max-matching already used");
                 // exit(1);
                 return Err(1);
             }
@@ -329,16 +340,17 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
         );
 
         if rwork[(orig_row - 1) as usize] == 0.0 {
-            println!("WARNING: MATCHING TO A ZERO");
+            // log::warn!("matching to as zero");
 
+            let mut buf = String::from("matching to as zero: ");
             for i in a_colptr[(jcol - 1) as usize]..a_colptr[jcol as usize] {
-                print!(
-                    "({},{}) ",
+                buf.push_str(&format!(
+                    "({}, {:?}) ",
                     a_rowind[(i - 1) as usize],
                     a_nz[(i - 1) as usize]
-                );
+                ));
             }
-            println!(". orig_row={}", orig_row);
+            log::warn!("{}. orig_row={}", buf, orig_row);
         }
 
         // Copy the dense vector into the sparse data structure, find the
@@ -424,8 +436,8 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
 
     // free_and_exit:
 
-    // println!("rperm: {}", lu.row_perm);
-    // println!("cperm: {}", lu.col_perm);
+    // log::info!("rperm: {:?}", lu.row_perm);
+    // log::info!("cperm: {:?}", lu.col_perm);
 
     // if (out_of_mem) {
     //   fprintf(stderr,
@@ -468,7 +480,7 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
         }
     }
 
-    // println!(">>> last = {}, min = {}",ujj,minujj);
+    // log::info!("last = {}, min = {}",ujj,minujj);
     // }
 
     // if (reporter_func) {
@@ -476,8 +488,8 @@ pub fn dgstrf(gp: &GP, mrows: i32, ncols: i32, a_nz: &[f64], desc_a: &mut CSC) -
     //   flops = (double) lastlu;
     //   (*reporter_func)(reporter_ctxt,"NONZEROS",&flops);
     // }
-    println!("FLOPS: {}", flops);
-    println!("NONZEROS: {}", lastlu);
+    log::info!("flops: {}", flops);
+    log::info!("nonzeros: {}", lastlu);
 
     Ok(lu)
 }

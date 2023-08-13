@@ -8,3 +8,5 @@ repository = "https://github.com/rwl/lufact_rs"
 
 [dependencies]
 lufact-sys = "0.2"
+log = "0.4"
+env_logger = "0.10"
