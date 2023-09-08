@@ -23,6 +23,7 @@ impl LU {
     }
 }
 
+#[derive(Clone)]
 pub struct GP {
     /// 0=none, 1=partial, 2=threshold
     pub pivot_policy: i32,
